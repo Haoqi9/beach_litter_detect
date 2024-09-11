@@ -102,213 +102,156 @@ st.write(
     '<h1 style="text-align: center;">🗑️♻️ Detector de Basura en Playas ☀️🏖️</h1>', unsafe_allow_html=True
 )
 
-tab1, tab2, tab3 = st.tabs(["Images", "Videos", "Webcam"])
 # Annotate Images.
-with tab1: 
-    # Yolo model used.
-    st.caption(f"Model: {model_name}")
+# Yolo model used.
+st.caption(f"Model: {model_name}")
 
-    # Image uploader widget for images.
-    uploaded_img = st.file_uploader(
-        "Upload an image file ...",
-        type=["jpg", "jpeg", "png"],
-        key='images'
+# Image uploader widget for images.
+uploaded_img = st.file_uploader(
+    "Upload an image file ...",
+    type=["jpg", "jpeg", "png"],
+    key='images'
+)
+
+
+if uploaded_img is not None:
+    # Display parameters.
+    st.write(
+        '<h2 style="text-align: center;">Parameters</h2>', unsafe_allow_html=True
     )
 
+    with st.form(key='form1'):
+        param1, param2, param3 = st.columns(3)
+        
+        conf_text = "Controls which predictions are kept based on their confidence score (i.e., how confident the model is that the box contains an object). If a bounding box's confidence score is below the conf threshold, it will be discarded."
 
-    if uploaded_img is not None:
-        # Display parameters.
-        st.write(
-            '<h2 style="text-align: center;">Parameters</h2>', unsafe_allow_html=True
+        iou_text = "Controls the overlap threshold used during Non-Maximum Suppression to remove duplicate predictions (i.e., how much overlap between boxes is allowed before one is discarded). If the IoU is below the threshold, the boxes will be considered as separate detections."
+
+        conf_threshold = param1.number_input(
+            label='Confidence Score Threshold',
+            min_value=0.0,
+            max_value=1.0,
+            value=0.25,
+            step=0.05,
+            help=conf_text
         )
 
-        with st.form(key='form1'):
-            param1, param2, param3 = st.columns(3)
-            
-            conf_text = "Controls which predictions are kept based on their confidence score (i.e., how confident the model is that the box contains an object). If a bounding box's confidence score is below the conf threshold, it will be discarded."
+        iou_threshold = param2.number_input(
+            label='IoU Threshold',
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.05,
+            help=conf_text
+        )
 
-            iou_text = "Controls the overlap threshold used during Non-Maximum Suppression to remove duplicate predictions (i.e., how much overlap between boxes is allowed before one is discarded). If the IoU is below the threshold, the boxes will be considered as separate detections."
+        full_screen = param3.toggle(
+            label='See full screen',
+            value=True
+        )
 
-            conf_threshold = param1.number_input(
-                label='Confidence Score Threshold',
-                min_value=0.0,
-                max_value=1.0,
-                value=0.25,
-                step=0.05,
-                help=conf_text
-            )
-
-            iou_threshold = param2.number_input(
-                label='IoU Threshold',
-                min_value=0.0,
-                max_value=1.0,
-                value=0.7,
-                step=0.05,
-                help=conf_text
-            )
-
-            full_screen = param3.toggle(
-                label='See full screen',
-                value=True
-            )
-
-            # submit button.
-            submitted = st.form_submit_button()
-        
-        if submitted:
-            img_np = get_image_np_from_bytes(uploaded_img)
-
-            pred_results = model.predict(img_np,
-                                        conf=conf_threshold,
-                                        iou=iou_threshold
-                                        )[0]
-
-            if full_screen:
-                use_column_width=True
-            else:
-                use_column_width=False
-
-            # Display annotated image.
-            st.write(
-                '<h2 style="text-align: center;">Predicted Image</h2>', unsafe_allow_html=True
-            )
-
-            # make the array compatible with cv2.
-            pred_img = np.ascontiguousarray(img_np, dtype=np.uint8)
-            # Count class detected.
-            detect_class_count_dict = {clase:0 for clase in class_list}
-            for detect_img_box in pred_results.boxes:
-                detect_class = class_list[int(detect_img_box.cls)]
-                detect_class_count_dict[detect_class] += 1
-                class_color = color_dict[detect_class]
-
-                x1, y1, x2, y2 = map(int, detect_img_box.xyxy[0])
-                # Draw bounding box.
-                pred_img = cv2.rectangle(pred_img, (x1, y1), (x2, y2), RGB_dict[class_color], 2)
-                # Put class label.
-                # pred_img = cv2.putText(pred_img, detect_class, (x1, y1 - 10), cv2.FONT_HERSHEY_PLAIN, 1, RGB_dict[class_color], 1)
-
-            # Display detection count info.
-            tuplas_clase_count = [(clase, str(count)) for clase, count in detect_class_count_dict.items()]
-            total_count = sum([int(count) for _, count in tuplas_clase_count])
-
-            st.write(f"""<p style="text-align:center; background-color:black; color:white">Detections ({total_count})</p>""",
-            unsafe_allow_html=True)
-
-            # Do not run if 0 detection.
-            if total_count > 0:
-                tuplas_clase_pos_count = [tupla for tupla in tuplas_clase_count if int(tupla[1]) > 0]
-                detec_containers = [f"detec_container{i}" for i in range(len(tuplas_clase_pos_count)+1)]
-                detec_containers = st.columns(len(tuplas_clase_pos_count))
-                for i, (clase, count) in enumerate(tuplas_clase_pos_count):
-                    detec_containers[i].write(f"""<p style="background-color:{color_dict[clase]}; color:white; text-align:center;">{clase.capitalize()} ({count})</p>""",
-                    unsafe_allow_html=True)
-
-            st.image(
-                # pred_img,
-                pred_img,
-                use_column_width=use_column_width
-            )
-
-            # Encode np array image back to binary format to be saved.
-            success, encoded_image = cv2.imencode('.png', pred_img[..., ::-1])
-            if not success:
-                raise RuntimeError("Failed to encode image.")
-
-            # Convert encoded image to binary format
-            binary_image = encoded_image.tobytes()
-
-            st.download_button(
-                label='Download annotated image',
-                data=binary_image,
-                file_name='annotated_image.png',
-                key=3
-            )
-            
-            # Display individual detections.
-            st.write(
-                '<h2 style="text-align:center;">Individual Detections</h2>', unsafe_allow_html=True
-            )
-            
-            # Do not run if 0 detection.
-            if total_count > 0:
-                # Create containers for each ind detection.
-                cols_per_row = 5
-                containers_list = [f"container{i}" for i in range(len(pred_results)+1)]
-                pred_boxes = pred_results.boxes
-                detection_counter = 0
-                for i in range(0, len(pred_results)+1, cols_per_row):
-                    pred_boxes_chunk = pred_boxes[i:i+cols_per_row]
-                    containers_chunk = containers_list[i:i+cols_per_row]
-                    containers_chunk = st.columns(cols_per_row)
-                
-                    for i, (pred_box, container) in enumerate(zip(pred_boxes_chunk, containers_chunk)):
-                        class_id = int(pred_box.cls[0])
-                        class_name = class_list[class_id]
-                    
-                        conf_score = np.round(float(pred_box.conf[0]), 2)
-                        
-                        detection_xyxy = pred_box.xyxy
-                        x_min, y_min, x_max, y_max = detection_xyxy[0]
-                        x_min, y_min, x_max, y_max = int(x_min), int(y_min), int(x_max), int(y_max)
-                        # new orig_img so do not overwrite bouding boxes in same img.
-                        cropped_img = img_np[y_min:y_max, x_min:x_max]
-
-                        detection_counter += 1
-                        container.write(f"""<p style="background-color:{color_dict[class_name]}; color:white">Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</p>""", unsafe_allow_html=True)
-                        container.image(image=cropped_img, use_column_width=True)
-        
-with tab3:
-    start_webcam = st.toggle(
-        label='Start Webcam',
-        key='webcam'
-    )
+        # submit button.
+        submitted = st.form_submit_button()
     
-    webcam = False
-    if start_webcam is True:
-        # Set up image placeholder to display images.
-        image_placeholder = st.empty()
-        # Unique id tracking set.
-        unique_ids = set()
+    if submitted:
+        img_np = get_image_np_from_bytes(uploaded_img)
+
+        pred_results = model.predict(img_np,
+                                    conf=conf_threshold,
+                                    iou=iou_threshold
+                                    )[0]
+
+        if full_screen:
+            use_column_width=True
+        else:
+            use_column_width=False
+
+        # Display annotated image.
+        st.write(
+            '<h2 style="text-align: center;">Predicted Image</h2>', unsafe_allow_html=True
+        )
+
+        # make the array compatible with cv2.
+        pred_img = np.ascontiguousarray(img_np, dtype=np.uint8)
+        # Count class detected.
         detect_class_count_dict = {clase:0 for clase in class_list}
-        # Continuously capture frames from the webcam.
-        webcam = cv2.VideoCapture(0)
-        while True:
-            ret, frame = webcam.read()
-            if not ret:
-                break
+        for detect_img_box in pred_results.boxes:
+            detect_class = class_list[int(detect_img_box.cls)]
+            detect_class_count_dict[detect_class] += 1
+            class_color = color_dict[detect_class]
+
+            x1, y1, x2, y2 = map(int, detect_img_box.xyxy[0])
+            # Draw bounding box.
+            pred_img = cv2.rectangle(pred_img, (x1, y1), (x2, y2), RGB_dict[class_color], 2)
+            # Put class label.
+            # pred_img = cv2.putText(pred_img, detect_class, (x1, y1 - 10), cv2.FONT_HERSHEY_PLAIN, 1, RGB_dict[class_color], 1)
+
+        # Display detection count info.
+        tuplas_clase_count = [(clase, str(count)) for clase, count in detect_class_count_dict.items()]
+        total_count = sum([int(count) for _, count in tuplas_clase_count])
+
+        st.write(f"""<p style="text-align:center; background-color:black; color:white">Detections ({total_count})</p>""",
+        unsafe_allow_html=True)
+
+        # Do not run if 0 detection.
+        if total_count > 0:
+            tuplas_clase_pos_count = [tupla for tupla in tuplas_clase_count if int(tupla[1]) > 0]
+            detec_containers = [f"detec_container{i}" for i in range(len(tuplas_clase_pos_count)+1)]
+            detec_containers = st.columns(len(tuplas_clase_pos_count))
+            for i, (clase, count) in enumerate(tuplas_clase_pos_count):
+                detec_containers[i].write(f"""<p style="background-color:{color_dict[clase]}; color:white; text-align:center;">{clase.capitalize()} ({count})</p>""",
+                unsafe_allow_html=True)
+
+        st.image(
+            # pred_img,
+            pred_img,
+            use_column_width=use_column_width
+        )
+
+        # Encode np array image back to binary format to be saved.
+        success, encoded_image = cv2.imencode('.png', pred_img[..., ::-1])
+        if not success:
+            raise RuntimeError("Failed to encode image.")
+
+        # Convert encoded image to binary format
+        binary_image = encoded_image.tobytes()
+
+        st.download_button(
+            label='Download annotated image',
+            data=binary_image,
+            file_name='annotated_image.png',
+            key=3
+        )
+        
+        # Display individual detections.
+        st.write(
+            '<h2 style="text-align:center;">Individual Detections</h2>', unsafe_allow_html=True
+        )
+        
+        # Do not run if 0 detection.
+        if total_count > 0:
+            # Create containers for each ind detection.
+            cols_per_row = 5
+            containers_list = [f"container{i}" for i in range(len(pred_results)+1)]
+            pred_boxes = pred_results.boxes
+            detection_counter = 0
+            for i in range(0, len(pred_results)+1, cols_per_row):
+                pred_boxes_chunk = pred_boxes[i:i+cols_per_row]
+                containers_chunk = containers_list[i:i+cols_per_row]
+                containers_chunk = st.columns(cols_per_row)
             
-            pred_frame_results = model.track(frame,
-                                        stream=True,
-                                        persist=True,
-                                        verbose=False,
-                                        conf=conf_threshold,
-                                        iou=iou_threshold
-                                        )[0]
-            # Annotated frame.
-            labeled_frame = pred_frame_results.plot(conf=False)
-            
-            # Count class detected.
-            for detect_img_box in pred_frame_results.boxes:
-                if detect_img_box.is_track:
-                    detect_id = int(detect_img_box.id)
-                    if detect_id not in unique_ids:
-                        detect_class = class_list[int(detect_img_box.cls)]
-                        detect_class_count_dict[detect_class] += 1
-                        unique_ids.add(detect_id)
-            
-            # Define count text.
-            total_count = str(len(unique_ids))
-            text = 'Total:' + total_count
-            tuplas_clase_count = [(clase.capitalize(), str(count)) for clase, count in detect_class_count_dict.items()]
-            for tupla in tuplas_clase_count:
-                text += f" | {':'.join(tupla)}"
-            
-            # Add text to annotated frame.
-            labeled_frame = put_text_in_img_middle_upper(
-                image_np=labeled_frame,
-                text=text,
-                font_scale=0.6,
-                font_thickness=2,
-                color=(255, 255, 255)  # white.
-            )
+                for i, (pred_box, container) in enumerate(zip(pred_boxes_chunk, containers_chunk)):
+                    class_id = int(pred_box.cls[0])
+                    class_name = class_list[class_id]
+                
+                    conf_score = np.round(float(pred_box.conf[0]), 2)
+                    
+                    detection_xyxy = pred_box.xyxy
+                    x_min, y_min, x_max, y_max = detection_xyxy[0]
+                    x_min, y_min, x_max, y_max = int(x_min), int(y_min), int(x_max), int(y_max)
+                    # new orig_img so do not overwrite bouding boxes in same img.
+                    cropped_img = img_np[y_min:y_max, x_min:x_max]
+
+                    detection_counter += 1
+                    container.write(f"""<p style="background-color:{color_dict[class_name]}; color:white">Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</p>""", unsafe_allow_html=True)
+                    container.image(image=cropped_img, use_column_width=True)
