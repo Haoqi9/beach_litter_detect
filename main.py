@@ -83,7 +83,8 @@ RGB_dict_yolo = {
     'cardboard' : (255, 41, 4),
     'plastic'   : (235, 219, 11),
     'glass'     : (243, 243, 243),
-    'metal'     : (184, 223, 0)
+    'metal'     : (184, 223, 0),
+    'text'      : (132, 79, 0)
 }
 
 ################################################################################
@@ -213,7 +214,7 @@ with tab1:
                 detec_containers = [f"detec_container{i}" for i in range(len(tuplas_clase_pos_count)+1)]
                 detec_containers = st.columns(len(tuplas_clase_pos_count))
                 for i, (clase, count) in enumerate(tuplas_clase_pos_count):
-                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:white; text-align:center;">{clase.capitalize()} ({count})</p>""",
+                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:rgb{RGB_dict_yolo['text']}; text-align:center;">{clase.capitalize()} ({count})</p>""",
                     unsafe_allow_html=True)
 
             st.image(
@@ -266,7 +267,7 @@ with tab1:
                         cropped_img = img_np[y_min:y_max, x_min:x_max]
 
                         detection_counter += 1
-                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:white">Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</p>""", unsafe_allow_html=True)
+                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{RGB_dict_yolo['text']}">Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</p>""", unsafe_allow_html=True)
                         container.image(image=cropped_img, use_column_width=True)
         
 with tab3:
