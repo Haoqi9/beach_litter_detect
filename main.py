@@ -95,7 +95,7 @@ st.write(
     '<h1 style="text-align: center;">🗑️♻️ Detector de Basura en Playas ☀️🏖️</h1>', unsafe_allow_html=True
 )
 
-tab1, tab2, tab3 = st.tabs(["Images", "Videos", "Webcam"])
+tab1, tab2 = st.tabs(["Images", "Videos"])
 # Annotate Images.
 with tab1: 
     # Yolo model used.
@@ -153,7 +153,7 @@ with tab1:
                     '*YOLO default*: pred boxes + labels',
                     '*Custom* : pred boxes + nº instance'
                 ],
-                index=1
+                index=0
             )
 
             # submit button.
@@ -214,7 +214,7 @@ with tab1:
                 detec_containers = [f"detec_container{i}" for i in range(len(tuplas_clase_pos_count)+1)]
                 detec_containers = st.columns(len(tuplas_clase_pos_count))
                 for i, (clase, count) in enumerate(tuplas_clase_pos_count):
-                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:rgb{RGB_dict_yolo['text']}; text-align:center;">{clase.capitalize()} ({count})</p>""",
+                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:rgb{RGB_dict_yolo['text']}; text-align:center;"><b>{clase.capitalize()} ({count})</b></p>""",
                     unsafe_allow_html=True)
 
             st.image(
@@ -267,41 +267,46 @@ with tab1:
                         cropped_img = img_np[y_min:y_max, x_min:x_max]
 
                         detection_counter += 1
-                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{RGB_dict_yolo['text']}">Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</p>""", unsafe_allow_html=True)
+                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{RGB_dict_yolo['text']}"><b>Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</b></p>""", unsafe_allow_html=True)
                         container.image(image=cropped_img, use_column_width=True)
         
-with tab3:
-    start_webcam = st.toggle(
-        label='Start Webcam',
-        key='webcam'
-    )
-    
-    webcam = False
-    if start_webcam is True:
-        # Set up image placeholder to display images.
-        image_placeholder = st.empty()
-        # Unique id tracking set.
+with tab2:
+    # File uploader
+    uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "avi"])
+
+    if uploaded_file is not None:
+        video_placeholder = st.empty()
+
+        # Create a temporary file to save the video
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(uploaded_file.read())
+            temp_video_path = temp_file.name
+        
+        # Open the video using OpenCV
+        cap = cv2.VideoCapture(temp_video_path)
+        
+        # Loop through video frames
         unique_ids = set()
         detect_class_count_dict = {clase:0 for clase in class_list}
-        # Continuously capture frames from the webcam.
-        webcam = cv2.VideoCapture(0)
-        while True:
-            ret, frame = webcam.read()
+        while cap.isOpened():
+            ret, frame = cap.read()
+
             if not ret:
                 break
+
+            # Perform YOLO prediction on the frame
+            results = next(model.track(frame,
+                                  persist=True,
+                                  stream=True,
+                                  conf=0.25,
+                                  iou=0.5
+                                  ))
+
+            labeled_frame = results.plot(conf=False)
             
-            pred_frame_results = model.track(frame,
-                                        stream=True,
-                                        persist=True,
-                                        verbose=False,
-                                        conf=conf_threshold,
-                                        iou=iou_threshold
-                                        )[0]
-            # Annotated frame.
-            labeled_frame = pred_frame_results.plot(conf=False)
-            
-            # Count class detected.
-            for detect_img_box in pred_frame_results.boxes:
+            for detect_img_box in results.boxes:
+                # DEBUG.
+                # print(detect_img_box)
                 if detect_img_box.is_track:
                     detect_id = int(detect_img_box.id)
                     if detect_id not in unique_ids:
@@ -309,18 +314,23 @@ with tab3:
                         detect_class_count_dict[detect_class] += 1
                         unique_ids.add(detect_id)
             
-            # Define count text.
+            # Definir texto de conteo.
             total_count = str(len(unique_ids))
-            text = 'Total:' + total_count
+            text = 'Total count:' + total_count
             tuplas_clase_count = [(clase.capitalize(), str(count)) for clase, count in detect_class_count_dict.items()]
             for tupla in tuplas_clase_count:
                 text += f" | {':'.join(tupla)}"
             
-            # Add text to annotated frame.
-            labeled_frame = put_text_in_img_middle_upper(
-                image_np=labeled_frame,
-                text=text,
-                font_scale=0.6,
-                font_thickness=2,
-                color=(255, 255, 255)  # white.
-            )
+            # # Añadir texto en imagen anotado.
+            # labeled_frame = put_text_in_img_middle_upper(
+            #     image_np=labeled_frame,
+            #     text=text,
+            #     font_scale=0.6,
+            #     font_thickness=2,
+            #     color=(255, 255, 255)  # white.
+            # )
+            
+            video_placeholder.image(
+                image=labeled_frame,
+                caption=f'{text}',
+                channels="BGR")
