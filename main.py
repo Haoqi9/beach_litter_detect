@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import streamlit as st
 import glob
+import tempfile
 from ultralytics import YOLO
 
 ################################################################################
