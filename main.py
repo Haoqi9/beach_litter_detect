@@ -265,7 +265,7 @@ with tab1:
                         cropped_img = img_np[y_min:y_max, x_min:x_max]
 
                         # resize image.
-                        cropped_img = cv2.resize(cropped_img, dsize=(800, 800), interpolation=cv2.INTER_LINEAR)
+                        # cropped_img = cv2.resize(cropped_img, dsize=(800, 800), interpolation=cv2.INTER_LINEAR)
 
                         detection_counter += 1
                         
