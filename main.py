@@ -181,12 +181,12 @@ with tab1:
 
             if pred_style == '*Custom* : pred boxes + nº instance':
                 # make the array compatible with cv2.
-                pred_img = np.ascontiguousarray(img_np, dtype=np.uint8)[..., ::-1]
+                pred_img = np.ascontiguousarray(img_np, dtype=np.uint8)
             else:
                 pred_img = pred_results.plot(conf=False,
                                             #  font_size=10,
                                             #  line_width=3
-                                             )[..., ::-1]
+                                             )
             
             # Count class detected.
             detect_class_count_dict = {clase:0 for clase in class_list}
@@ -225,7 +225,7 @@ with tab1:
                     unsafe_allow_html=True)
 
             st.image(
-                image=pred_img,
+                image=pred_img[..., ::-1],
                 use_column_width=use_column_width
             )
             
