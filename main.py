@@ -85,7 +85,8 @@ RGB_dict_yolo = {
     'plastic'   : (12, 219, 237),
     'glass'     : (244, 244, 239),
     'metal'     : (0, 226, 179),
-    'text'      : (18, 32, 100)
+    'text'      : (18, 32, 100),
+    'white'     : (255, 255, 255)
 }
 
 ################################################################################
@@ -215,7 +216,12 @@ with tab1:
                 detec_containers = [f"detec_container{i}" for i in range(len(tuplas_clase_pos_count)+1)]
                 detec_containers = st.columns(len(tuplas_clase_pos_count))
                 for i, (clase, count) in enumerate(tuplas_clase_pos_count):
-                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:rgb{RGB_dict_yolo['text']}; text-align:center;"><b>{clase.capitalize()} ({count})</b></p>""",
+                    if clase == class_list[0]:
+                        text_RGB = RGB_dict_yolo['white']
+                    else:
+                        text_RGB = RGB_dict_yolo['text']
+                        
+                    detec_containers[i].write(f"""<p style="background-color:rgb{RGB_dict_yolo[clase]}; color:rgb{text_RGB}; text-align:center;"><b>{clase.capitalize()} ({count})</b></p>""",
                     unsafe_allow_html=True)
 
             st.image(
@@ -253,7 +259,13 @@ with tab1:
                         cropped_img = img_np[y_min:y_max, x_min:x_max]
 
                         detection_counter += 1
-                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{RGB_dict_yolo['text']}"><b>Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</b></p>""", unsafe_allow_html=True)
+                        
+                        if class_name == class_list[0]:
+                            text_RGB = RGB_dict_yolo['white']
+                        else:
+                            text_RGB = RGB_dict_yolo['text']
+                            
+                        container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{text_RGB}"><b>Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</b></p>""", unsafe_allow_html=True)
                         container.image(image=cropped_img[..., ::-1], use_column_width=True)
         
 with tab2:
