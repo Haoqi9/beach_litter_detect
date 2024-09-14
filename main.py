@@ -191,11 +191,9 @@ with tab1:
             if pred_style == '*Custom* : pred boxes + nº instance':
                 # make the array compatible with cv2.
                 pred_img = np.ascontiguousarray(img_np, dtype=np.uint8)
+                pred_img_yolo = pred_results.plot(conf=False)
             else:
-                pred_img = pred_results.plot(conf=False,
-                                            #  font_size=10,
-                                            #  line_width=3
-                                             )
+                pred_img = pred_results.plot(conf=False)
             
             # Count class detected.
             detect_class_count_dict = {clase:0 for clase in class_list}
@@ -265,7 +263,8 @@ with tab1:
                         x_min, y_min, x_max, y_max = detection_xyxy[0]
                         x_min, y_min, x_max, y_max = int(x_min), int(y_min), int(x_max), int(y_max)
                         # new orig_img so do not overwrite bouding boxes in same img.
-                        cropped_img = img_np[y_min:y_max, x_min:x_max]
+                        # cropped_img = img_np[y_min:y_max, x_min:x_max]
+                        cropped_img = pred_img_yolo[y_min:y_max, x_min:x_max]
 
                         detection_counter += 1
                         
