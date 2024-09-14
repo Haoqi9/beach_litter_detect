@@ -272,7 +272,7 @@ with tab1:
                             text_RGB = RGB_dict_yolo['text']
                             
                         container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{text_RGB}"><b>Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</b></p>""", unsafe_allow_html=True)
-                        container.image(image=cropped_img, use_column_width=True)
+                        container.image(image=cropped_img[..., ::-1], use_column_width=True)
         
 with tab2:
     # File uploader
