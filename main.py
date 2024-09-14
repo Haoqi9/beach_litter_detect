@@ -197,7 +197,7 @@ with tab1:
                 if pred_style == '*Custom* : pred boxes + nº instance':
                     x1, y1, x2, y2 = map(int, detect_img_box.xyxy[0])
                     # Draw bounding box.
-                    pred_img = cv2.rectangle(pred_img, (x1, y1), (x2, y2), RGB_dict_yolo[detect_class], 2)
+                    pred_img = cv2.rectangle(pred_img[..., ::-1], (x1, y1), (x2, y2), RGB_dict_yolo[detect_class], 2)
                     # Put instance number.
                     pred_img = cv2.putText(pred_img, str(i+1), (x1 + 15, y1 - 10), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
                     # Put class label.
