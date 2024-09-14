@@ -25,7 +25,7 @@ def get_image_np_from_bytes (img_bytesIO):
     # Convert bytearray to numpy array (1 dimension).
     np_array = np.asarray(img_bytes, dtype=np.uint8)
     # Decode numpy array to image tensor (3 dimensions).
-    image_np = cv2.imdecode(np_array, cv2.IMREAD_COLOR)[..., ::-1]
+    image_np = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
     return image_np
 
 def put_text_in_img_middle_upper(
@@ -219,23 +219,8 @@ with tab1:
                     unsafe_allow_html=True)
 
             st.image(
-                image=pred_img,
+                image=pred_img[..., ::-1],
                 use_column_width=use_column_width
-            )
-
-            # Encode np array image back to binary format to be saved.
-            success, encoded_image = cv2.imencode('.png', pred_img[..., ::-1])
-            if not success:
-                raise RuntimeError("Failed to encode image.")
-
-            # Convert encoded image to binary format
-            binary_image = encoded_image.tobytes()
-
-            st.download_button(
-                label='Download annotated image',
-                data=binary_image,
-                file_name='annotated_image.png',
-                key=3
             )
             
             # Display individual detections.
@@ -269,7 +254,7 @@ with tab1:
 
                         detection_counter += 1
                         container.write(f"""<p style="background-color:rgb{RGB_dict_yolo[class_name]}; color:rgb{RGB_dict_yolo['text']}"><b>Instance {detection_counter}: {class_name.capitalize()} ({conf_score})</b></p>""", unsafe_allow_html=True)
-                        container.image(image=cropped_img, use_column_width=True)
+                        container.image(image=cropped_img[..., ::-1], use_column_width=True)
         
 with tab2:
     # File uploader
