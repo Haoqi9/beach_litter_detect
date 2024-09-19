@@ -1,3 +1,4 @@
+import base64
 import cv2
 import numpy as np
 import streamlit as st
@@ -10,6 +11,7 @@ from ultralytics import YOLO
 # PAGE CONFIGURATION
 
 st.set_page_config(
+    page_icon='logo.jpg',
     page_title='Litter Detector',
     layout='wide',
     initial_sidebar_state='auto',
@@ -102,9 +104,40 @@ RGB_dict_yolo_reverse = {
 
 # BODY
 
-st.write(
-    '<h1 style="text-align: center;">🗑️♻️ Detector de Basura en Playas ☀️🏖️</h1>', unsafe_allow_html=True
-)
+# Convert the local image to base64
+def image_to_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
+
+# Path to your local image
+image_path = "logo.jpg"
+data_url = image_to_base64(image_path)
+
+st.markdown(f"""
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60vh;">
+        <img src="data:image/jpeg;base64,{data_url}" alt="Logo" style="width: 230px;">
+        <h1 style="margin-left: 40px;">
+            <span style="color: #2B5D65;">Trash</span><span style="color: #47BFB6;">Tracker</span>
+        </h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+#1E90FF (blue)
+#90EE90
+
+# title1, title2 = st.columns([0.4, 0.6])
+# title1.image('logo.jpg', width=250)
+# title2.markdown(
+#     """
+#     <div style="display: flex; justify-content: flex-start; align-items: center; height: 25vh; padding-left: 5px;">
+#         <h1 style="color: #2E8B57;">TrashTracker</h1>
+#     </div>
+#     """,
+#     unsafe_allow_html=True
+# )
+# st.write(
+#     '<h1 style="text-align: center;">🗑️♻️ Detector de Basura en Playas ☀️🏖️</h1>', unsafe_allow_html=True
+# )
 
 tab1, tab2 = st.tabs(["Images", "Videos"])
 # Annotate Images.
