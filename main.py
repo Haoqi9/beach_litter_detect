@@ -171,7 +171,7 @@ with tab1:
                 max_value=1.0,
                 value=0.5,
                 step=0.05,
-                help=conf_text
+                help=iou_text
             )
 
             full_screen = param2.radio(
